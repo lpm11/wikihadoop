@@ -152,7 +152,7 @@ public class StreamWikiDumpInputFormat extends KeyValueTextInputFormat {
     job.setLong(NUM_INPUT_FILES, files.length);
     long totalSize = 0;                           // compute total size
     for (FileStatus file: files) {                // check we have valid files
-      if (file.isDirectory()) {
+      if (file.isDir()) {
         throw new IOException("Not a file: "+ file.getPath());
       }
       totalSize += file.getLen();
@@ -160,7 +160,7 @@ public class StreamWikiDumpInputFormat extends KeyValueTextInputFormat {
     long minSize = job.getLong(org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MINSIZE, 1);
     long goalSize = totalSize / (numSplits == 0 ? 1 : numSplits);
     for (FileStatus file: files) {
-      if (file.isDirectory()) {
+      if (file.isDir()) {
         throw new IOException("Not a file: "+ file.getPath());
       }
       long blockSize = file.getBlockSize();
@@ -176,8 +176,8 @@ public class StreamWikiDumpInputFormat extends KeyValueTextInputFormat {
 
 
   private FileSplit makeSplit(Path path, long start, long size, NetworkTopology clusterMap, BlockLocation[] blkLocations) throws IOException {
-    return makeSplit(path, start, size,
-                     getSplitHosts(blkLocations, start, size, clusterMap));
+    return new FileSplit(path, start, size,
+                         getSplitHosts(blkLocations, start, size, clusterMap));
   }
 
   public List<InputSplit> getSplits(JobConf job, FileStatus file, String pattern, long splitSize) throws IOException {
@@ -257,8 +257,8 @@ public class StreamWikiDumpInputFormat extends KeyValueTextInputFormat {
       
       if (bytesRemaining > 0 && !processedPageEnds.contains(length)) {
         System.err.println(pageEndPattern + " remaining: pos=" + (length-bytesRemaining) + " end=" + length);
-        splits.add(makeSplit(path, length-bytesRemaining, bytesRemaining, 
-                             blkLocations[blkLocations.length-1].getHosts()));
+        splits.add(new FileSplit(path, length-bytesRemaining, bytesRemaining, 
+                                 blkLocations[blkLocations.length-1].getHosts()));
       }
       if ( in != null )
         in.close();
@@ -266,7 +266,7 @@ public class StreamWikiDumpInputFormat extends KeyValueTextInputFormat {
       splits.add(makeSplit(path, 0, length, clusterMap, blkLocations));
     } else { 
       //Create empty hosts array for zero length files
-      splits.add(makeSplit(path, 0, length, new String[0]));
+      splits.add(new FileSplit(path, 0, length, new String[0]));
     }
     return splits;
   }
